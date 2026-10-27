@@ -4,6 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>내 취향 카드</title>
+  <link rel="icon" type="image/png" href="logo.png">
   <style>
     :root {
       --bg: #f4f6f8;
@@ -100,6 +101,18 @@
       padding: 1.5rem 1rem 2rem;
     }
 
+    /* 환영 배너 */
+    .welcome {
+      background: var(--surface);
+      border-radius: 12px;
+      border-left: 6px solid var(--accent);
+      padding: 1rem 1.25rem;
+      margin-bottom: 1rem;
+      box-shadow: 0 2px 8px var(--shadow);
+    }
+    .welcome h2 { margin: 0 0 0.25rem; font-size: 1.25rem; }
+    .welcome p { margin: 0; color: var(--muted); line-height: 1.5; }
+
     /* 도구줄: 검색 + 좋아요 */
     .toolbar {
       display: flex;
@@ -161,11 +174,19 @@
       border-left: 6px solid var(--card-color);
       padding: 1.25rem;
       box-shadow: 0 2px 8px var(--shadow);
-      transition: transform 0.2s, box-shadow 0.2s;
+      transition: transform 0.5s ease, opacity 0.5s ease, box-shadow 0.2s;
     }
     .card:hover {
       transform: translateY(-4px);
       box-shadow: 0 8px 20px var(--shadow);
+    }
+    .card.pre {
+      opacity: 0;
+      transform: translateY(24px);
+    }
+    @media (prefers-reduced-motion: reduce) {
+      .card { transition: none; }
+      .card.pre { opacity: 1; transform: none; }
     }
     .card:nth-child(1) { --card-color: #ff8a3d; }
     .card:nth-child(2) { --card-color: #4caf50; }
@@ -252,6 +273,11 @@
   </nav>
 
   <main>
+    <section class="welcome">
+      <h2>👋 제주대학교에 오신 것을 환영합니다!</h2>
+      <p>🌊 바다와 한라산 곁에서 꿈을 키우는 제주대학교의 이야기를 카드로 만나 보세요. 카드 제목을 누르면 내용이 펼쳐집니다.</p>
+    </section>
+
     <div class="toolbar">
       <div class="search-wrap">
         <input id="search" type="search" placeholder="🔍 카드 검색 (예: 한라산, 도전, 친구)" aria-label="카드 검색">
@@ -512,6 +538,19 @@
       emptyEl.style.display = shown ? 'none' : 'block';
       infoEl.textContent = q ? shown + '개 카드 일치' : '';
     });
+
+    // 카드 등장 애니메이션 (화면에 들어오면 아래에서 올라옴)
+    if ('IntersectionObserver' in window) {
+      const io = new IntersectionObserver(entries => {
+        entries.forEach(e => {
+          if (e.isIntersecting) {
+            e.target.classList.remove('pre');
+            io.unobserve(e.target);
+          }
+        });
+      }, { threshold: 0.1 });
+      cards.forEach(c => { c.classList.add('pre'); io.observe(c); });
+    }
 
     // 맨 위로 가기
     const topBtn = document.getElementById('to-top');
