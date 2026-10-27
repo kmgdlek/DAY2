@@ -255,6 +255,14 @@
       border-color: var(--accent);
       color: #fff;
     }
+    .now {
+      margin: 0 0 0.75rem;
+      padding: 0.6rem 0.8rem;
+      border-radius: 10px;
+      background: var(--soft);
+      font-size: 0.95rem;
+    }
+    .now small { display: block; color: var(--muted); font-size: 0.78rem; margin-top: 0.15rem; }
     #weather-result { background: var(--soft); border-radius: 10px; padding: 0.9rem; }
     #weather-result h3 { margin: 0 0 0.4rem; font-size: 1rem; }
     #weather-result ul { margin: 0; padding-left: 1.2rem; }
@@ -432,6 +440,7 @@
     <aside>
       <div class="box" id="weather">
         <h2>🌦️ 날씨별 추천</h2>
+        <p id="now-weather" class="now" aria-live="polite">🌐 현재 제주 날씨를 불러오는 중...</p>
         <div class="weather-btns" role="group" aria-label="날씨 선택">
           <button type="button" data-w="sun" aria-pressed="true">☀️ 맑음</button>
           <button type="button" data-w="rain" aria-pressed="false">☔ 비</button>
@@ -513,8 +522,54 @@
         d.items.map(i => '<li>' + i + '</li>').join('') + '</ul>';
       weatherBtns.forEach(b => b.setAttribute('aria-pressed', String(b.dataset.w === key)));
     }
-    weatherBtns.forEach(b => b.addEventListener('click', () => showWeather(b.dataset.w)));
+    let weatherPicked = false; // 사용자가 직접 고르면 자동 선택이 덮어쓰지 않음
+    weatherBtns.forEach(b => b.addEventListener('click', () => {
+      weatherPicked = true;
+      showWeather(b.dataset.w);
+    }));
     showWeather('sun');
+
+    // 현재 제주 날씨 (Open-Meteo: 키가 필요 없는 무료 날씨 API)
+    const nowEl = document.getElementById('now-weather');
+    function describeWeather(code, wind) {
+      if (code >= 95) return { icon: '⛈️', label: '뇌우', key: 'rain' };
+      if ((code >= 51 && code <= 67) || (code >= 80 && code <= 82)) return { icon: '🌧️', label: '비', key: 'rain' };
+      if ((code >= 71 && code <= 77) || code === 85 || code === 86) return { icon: '❄️', label: '눈', key: 'rain' };
+      const windy = wind >= 8; // 초속 8m 이상이면 바람 많은 날로 봄
+      if (code === 45 || code === 48) return { icon: '🌫️', label: '안개', key: windy ? 'wind' : 'sun' };
+      if (code === 0 || code === 1) return { icon: '☀️', label: '맑음', key: windy ? 'wind' : 'sun' };
+      return { icon: '⛅', label: code === 2 ? '구름 조금' : '흐림', key: windy ? 'wind' : 'sun' };
+    }
+    async function loadNowWeather() {
+      const ctrl = new AbortController();
+      const timer = setTimeout(() => ctrl.abort(), 8000);
+      try {
+        const res = await fetch('https://api.open-meteo.com/v1/forecast?' + new URLSearchParams({
+          latitude: '33.4996',
+          longitude: '126.5312',
+          current: 'temperature_2m,weather_code,wind_speed_10m',
+          wind_speed_unit: 'ms',
+          timezone: 'Asia/Seoul'
+        }), { signal: ctrl.signal });
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        const c = (await res.json()).current;
+        if (!c) throw new Error('no data');
+        const w = describeWeather(c.weather_code, c.wind_speed_10m);
+        nowEl.innerHTML = '';
+        nowEl.append(
+          w.icon + ' 지금 제주: ' + w.label + ' · ' + Math.round(c.temperature_2m) + '℃ · 바람 ' + Math.round(c.wind_speed_10m) + 'm/s'
+        );
+        const small = document.createElement('small');
+        small.textContent = weatherPicked ? '아래에서 직접 고른 날씨로 보고 있어요.' : '현재 날씨에 맞는 추천을 보여드려요. (Open-Meteo)';
+        nowEl.appendChild(small);
+        if (!weatherPicked) showWeather(w.key);
+      } catch (e) {
+        nowEl.textContent = '⚠️ 현재 날씨를 불러오지 못했어요. 아래에서 날씨를 직접 골라 보세요.';
+      } finally {
+        clearTimeout(timer);
+      }
+    }
+    loadNowWeather();
 
     // 사진 검색 (키는 서버의 /api/pixabay 가 환경변수로 관리하므로 화면에는 없음)
     const PHOTO_PER_PAGE = 10;
