@@ -1,0 +1,235 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>이미지 검색 슬라이드</title>
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: sans-serif;
+      background: #f4f6f8;
+      color: #222;
+    }
+    main { max-width: 1000px; margin: 0 auto; padding: 1rem; }
+    h1 { text-align: center; margin: 1rem 0; }
+
+    form { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 0.75rem; }
+    input[type="search"], input[type="password"] {
+      flex: 1 1 220px;
+      padding: 0.7rem 1rem;
+      font-size: 1rem;
+      border: 1px solid #ccd1d6;
+      border-radius: 10px;
+    }
+    button {
+      padding: 0.7rem 1.2rem;
+      font-size: 1rem;
+      border: none;
+      border-radius: 10px;
+      background: #ff8a3d;
+      color: #fff;
+      cursor: pointer;
+    }
+    button:disabled { background: #c9ced3; cursor: not-allowed; }
+    .key-row { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 1rem; font-size: 0.9rem; color: #666; }
+    .key-row button { background: #5a6b7b; padding: 0.5rem 0.9rem; font-size: 0.9rem; }
+
+    #status { min-height: 1.5rem; text-align: center; color: #666; margin: 0.5rem 0; }
+    #status.error { color: #c0392b; }
+
+    /* 슬라이드: 한 장면에 10장씩 */
+    .viewport { overflow: hidden; }
+    .slide {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 0.6rem;
+    }
+    .slide.in-next { animation: fromRight 0.35s ease; }
+    .slide.in-prev { animation: fromLeft 0.35s ease; }
+    @keyframes fromRight { from { transform: translateX(60px); opacity: 0; } to { transform: none; opacity: 1; } }
+    @keyframes fromLeft  { from { transform: translateX(-60px); opacity: 0; } to { transform: none; opacity: 1; } }
+
+    .thumb {
+      display: block;
+      position: relative;
+      aspect-ratio: 1 / 1;
+      border-radius: 10px;
+      overflow: hidden;
+      background: #dfe3e7;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.12);
+    }
+    .thumb img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .thumb span {
+      position: absolute;
+      left: 0; right: 0; bottom: 0;
+      padding: 0.2rem 0.4rem;
+      font-size: 0.75rem;
+      color: #fff;
+      background: rgba(0, 0, 0, 0.55);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .pager { display: flex; justify-content: center; align-items: center; gap: 1rem; margin: 1rem 0; }
+    #page-info { min-width: 7rem; text-align: center; }
+    .credit { text-align: center; font-size: 0.8rem; color: #888; }
+
+    @media (max-width: 760px) { .slide { grid-template-columns: repeat(2, 1fr); } }
+    @media (prefers-reduced-motion: reduce) { .slide.in-next, .slide.in-prev { animation: none; } }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>🖼️ 이미지 검색 슬라이드</h1>
+
+    <form id="search-form">
+      <input id="query" type="search" placeholder="검색어를 입력하세요 (예: 제주도, jeju beach)" aria-label="검색어" required>
+      <button type="submit">검색</button>
+    </form>
+
+    <div class="key-row">
+      <input id="api-key" type="password" placeholder="Pixabay API 키 (이 브라우저에만 저장됩니다)" aria-label="Pixabay API 키" autocomplete="off">
+      <button id="save-key" type="button">키 저장</button>
+    </div>
+
+    <p id="status" role="status" aria-live="polite">검색어를 입력하면 이미지를 10개씩 보여줍니다.</p>
+
+    <div class="viewport"><div id="slide" class="slide"></div></div>
+
+    <div class="pager">
+      <button id="prev" type="button" disabled>◀ 이전 10개</button>
+      <span id="page-info"></span>
+      <button id="next" type="button" disabled>다음 10개 ▶</button>
+    </div>
+
+    <p class="credit">이미지 제공: <a href="https://pixabay.com" target="_blank" rel="noopener noreferrer">Pixabay</a></p>
+  </main>
+
+  <script>
+    const PER_PAGE = 10;
+    const KEY_NAME = 'pixabay_key';
+    const store = {
+      get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } },
+      set(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
+    };
+
+    const form = document.getElementById('search-form');
+    const queryEl = document.getElementById('query');
+    const keyEl = document.getElementById('api-key');
+    const statusEl = document.getElementById('status');
+    const slideEl = document.getElementById('slide');
+    const prevBtn = document.getElementById('prev');
+    const nextBtn = document.getElementById('next');
+    const pageInfo = document.getElementById('page-info');
+
+    let currentQuery = '';
+    let page = 1;
+    let totalPages = 1;
+    let loading = false;
+
+    keyEl.value = store.get(KEY_NAME) || '';
+    document.getElementById('save-key').addEventListener('click', () => {
+      store.set(KEY_NAME, keyEl.value.trim());
+      setStatus(keyEl.value.trim() ? '키를 저장했습니다.' : '키를 비웠습니다.');
+    });
+
+    function setStatus(msg, isError) {
+      statusEl.textContent = msg;
+      statusEl.classList.toggle('error', !!isError);
+    }
+
+    function updatePager() {
+      prevBtn.disabled = loading || page <= 1;
+      nextBtn.disabled = loading || page >= totalPages;
+      pageInfo.textContent = currentQuery ? page + ' / ' + totalPages : '';
+    }
+
+    function render(hits, direction) {
+      slideEl.replaceChildren();
+      hits.forEach(hit => {
+        const a = document.createElement('a');
+        a.className = 'thumb';
+        a.href = hit.pageURL;
+        a.target = '_blank';
+        a.rel = 'noopener noreferrer';
+        const img = document.createElement('img');
+        img.src = hit.webformatURL;
+        img.alt = hit.tags || '';
+        img.loading = 'lazy';
+        const label = document.createElement('span');
+        label.textContent = hit.tags || '';
+        a.append(img, label);
+        slideEl.appendChild(a);
+      });
+      slideEl.classList.remove('in-next', 'in-prev');
+      void slideEl.offsetWidth; // 애니메이션 다시 시작
+      slideEl.classList.add(direction === 'prev' ? 'in-prev' : 'in-next');
+    }
+
+    async function load(newPage, direction) {
+      const key = keyEl.value.trim() || store.get(KEY_NAME);
+      if (!key) { setStatus('먼저 Pixabay API 키를 입력하고 [키 저장]을 눌러 주세요.', true); return; }
+      if (!currentQuery) return;
+
+      loading = true;
+      updatePager();
+      setStatus('불러오는 중...');
+      const url = 'https://pixabay.com/api/?' + new URLSearchParams({
+        key,
+        q: currentQuery,
+        image_type: 'photo',
+        per_page: String(PER_PAGE),
+        page: String(newPage),
+        lang: 'ko',
+        safesearch: 'true'
+      });
+      try {
+        const res = await fetch(url);
+        if (!res.ok) {
+          throw new Error(res.status === 429 ? '요청이 너무 많습니다. 잠시 후 다시 시도해 주세요.'
+            : res.status === 400 || res.status === 401 || res.status === 403 ? 'API 키를 확인해 주세요.'
+            : '불러오지 못했습니다. (오류 ' + res.status + ')');
+        }
+        const data = await res.json();
+        if (!data.hits || data.hits.length === 0) {
+          slideEl.replaceChildren();
+          totalPages = 1;
+          page = 1;
+          setStatus('"' + currentQuery + '" 검색 결과가 없습니다.', true);
+        } else {
+          page = newPage;
+          totalPages = Math.max(1, Math.ceil(data.totalHits / PER_PAGE));
+          render(data.hits, direction);
+          setStatus('"' + currentQuery + '" 검색 결과 ' + data.totalHits + '장 중 ' +
+            ((page - 1) * PER_PAGE + 1) + '–' + ((page - 1) * PER_PAGE + data.hits.length) + '번째');
+        }
+      } catch (err) {
+        setStatus(err.message || '네트워크 오류가 발생했습니다.', true);
+      } finally {
+        loading = false;
+        updatePager();
+      }
+    }
+
+    form.addEventListener('submit', e => {
+      e.preventDefault();
+      const q = queryEl.value.trim();
+      if (!q) return;
+      currentQuery = q;
+      page = 1;
+      totalPages = 1;
+      load(1, 'next');
+    });
+    prevBtn.addEventListener('click', () => load(page - 1, 'prev'));
+    nextBtn.addEventListener('click', () => load(page + 1, 'next'));
+    document.addEventListener('keydown', e => {
+      if (e.target.matches('input')) return;
+      if (e.key === 'ArrowLeft' && !prevBtn.disabled) prevBtn.click();
+      if (e.key === 'ArrowRight' && !nextBtn.disabled) nextBtn.click();
+    });
+  </script>
+</body>
+</html>
