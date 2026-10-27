@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>제주 맛집 에이전트 채팅</title>
+  <style>
+    :root {
+      --bg: #fff8f0;
+      --panel: #ffffff;
+      --text: #2b2b2b;
+      --muted: #8a8a8a;
+      --line: #f0e0d0;
+      --accent: #ff8a3d;
+      --me: #ff8a3d;
+      --me-text: #ffffff;
+      --bot: #f3f4f6;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #1a1714;
+        --panel: #25211d;
+        --text: #f1ece6;
+        --muted: #9a9288;
+        --line: #3a342e;
+        --bot: #332e29;
+      }
+    }
+    * { box-sizing: border-box; }
+    html, body { height: 100%; }
+    body {
+      margin: 0;
+      font-family: -apple-system, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      display: flex;
+      justify-content: center;
+    }
+    .chat {
+      display: flex;
+      flex-direction: column;
+      width: 100%;
+      max-width: 640px;
+      height: 100%;
+      background: var(--panel);
+      border-left: 1px solid var(--line);
+      border-right: 1px solid var(--line);
+    }
+    header {
+      padding: 0.9rem 1rem;
+      border-bottom: 1px solid var(--line);
+      font-weight: 700;
+    }
+    header small { display: block; font-weight: 400; color: var(--muted); margin-top: 0.15rem; }
+
+    #log {
+      flex: 1;
+      overflow-y: auto;
+      padding: 1rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.6rem;
+    }
+    .msg {
+      max-width: 78%;
+      padding: 0.6rem 0.9rem;
+      border-radius: 16px;
+      line-height: 1.5;
+      white-space: pre-wrap;
+      word-break: break-word;
+      animation: pop 0.2s ease;
+    }
+    .msg.me { align-self: flex-end; background: var(--me); color: var(--me-text); border-bottom-right-radius: 4px; }
+    .msg.bot { align-self: flex-start; background: var(--bot); border-bottom-left-radius: 4px; }
+    @keyframes pop { from { transform: translateY(6px); opacity: 0; } to { transform: none; opacity: 1; } }
+    @media (prefers-reduced-motion: reduce) { .msg { animation: none; } }
+
+    form {
+      display: flex;
+      gap: 0.5rem;
+      padding: 0.75rem 1rem;
+      border-top: 1px solid var(--line);
+    }
+    input {
+      flex: 1;
+      min-width: 0;
+      padding: 0.7rem 1rem;
+      font-size: 1rem;
+      color: var(--text);
+      background: var(--bg);
+      border: 1px solid var(--line);
+      border-radius: 999px;
+    }
+    input:focus { outline: 2px solid var(--accent); outline-offset: 1px; }
+    button {
+      padding: 0.7rem 1.2rem;
+      font-size: 1rem;
+      border: none;
+      border-radius: 999px;
+      background: var(--accent);
+      color: #fff;
+      cursor: pointer;
+    }
+    .notice {
+      margin: 0;
+      padding: 0 1rem 0.7rem;
+      text-align: center;
+      font-size: 0.75rem;
+      color: var(--muted);
+    }
+  </style>
+</head>
+<body>
+  <div class="chat">
+    <header>🍊 제주 맛집 에이전트<small>제주도 맛집을 알아봐 드려요 · 날씨와 체험 장소도 함께</small></header>
+
+    <div id="log" role="log" aria-live="polite"></div>
+
+    <form id="form">
+      <input id="input" type="text" placeholder="제주 맛집에 대해 물어보세요" aria-label="메시지 입력" autocomplete="off">
+      <button type="submit">보내기</button>
+    </form>
+
+    <p class="notice">※ 지금 답변은 미리 정해 둔 가짜 답변입니다.</p>
+  </div>
+
+  <script>
+    const REPLY_DELAY_MS = 1000;
+    // 답은 아래 3개를 차례로 돌려 씁니다.
+    const REPLIES = [
+      '안녕하세요! 제주도 맛집을 알아보는 에이전트예요 🍜 어느 지역(제주시, 성산, 서귀포, 애월)에서 드실 건가요? 방문 날짜도 알려주시면 날씨와 가까운 체험 장소까지 같이 볼게요!',
+      '성산일출봉 근처라면 해녀의 집에서 전복죽이나 성게미역국을 드셔 보세요 🐚 식사 후에는 가까운 바다 체험도 어울려요!',
+      '아직 공부 중이에요! 5일차에 진짜로 알아볼게요.'
+    ];
+
+    const form = document.getElementById('form');
+    const input = document.getElementById('input');
+    const log = document.getElementById('log');
+    let replyIndex = 0;
+
+    function addMessage(text, who) {
+      const el = document.createElement('div');
+      el.className = 'msg ' + who;
+      el.textContent = text;
+      log.appendChild(el);
+      log.scrollTop = log.scrollHeight;
+    }
+
+    form.addEventListener('submit', e => {
+      e.preventDefault();
+      const text = input.value.trim();
+      if (!text) return;
+      addMessage(text, 'me');
+      input.value = '';
+
+      const reply = REPLIES[replyIndex];
+      replyIndex = (replyIndex + 1) % REPLIES.length;
+      setTimeout(() => addMessage(reply, 'bot'), REPLY_DELAY_MS);
+    });
+
+    input.focus();
+  </script>
+</body>
+</html>

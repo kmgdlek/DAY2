@@ -317,6 +317,76 @@
     }
     #to-top.show { opacity: 1; pointer-events: auto; }
 
+    /* ===== 에이전트 채팅 (agent.html 을 팝업으로 띄움) ===== */
+    #chat-open {
+      position: fixed;
+      right: 1rem;
+      bottom: 5rem;
+      padding: 0.75rem 1.1rem;
+      border: none;
+      border-radius: 999px;
+      background: var(--accent);
+      color: #fff;
+      font-size: 1rem;
+      font-weight: 700;
+      cursor: pointer;
+      box-shadow: 0 2px 8px var(--shadow);
+    }
+    #chat-modal {
+      position: fixed;
+      inset: 0;
+      z-index: 100;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem;
+      background: rgba(0, 0, 0, 0);
+      visibility: hidden;
+      pointer-events: none;
+      transition: background 0.35s ease, visibility 0s linear 0.35s;
+    }
+    #chat-modal.open {
+      background: rgba(0, 0, 0, 0.5);
+      visibility: visible;
+      pointer-events: auto;
+      transition: background 0.35s ease, visibility 0s;
+    }
+    .chat-box {
+      position: relative;
+      width: min(640px, 100%);
+      height: min(760px, 100%);
+      border-radius: 14px;
+      overflow: hidden;
+      background: #fff;
+      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.35);
+      /* 닫힌 상태: 채팅 버튼 위치(transform-origin)로 작게 접힘 */
+      transform: scale(0.04);
+      opacity: 0;
+      transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease;
+    }
+    #chat-modal.open .chat-box {
+      transform: none;
+      opacity: 1;
+      transition: transform 0.4s cubic-bezier(0.2, 0.9, 0.3, 1), opacity 0.25s ease;
+    }
+    @media (prefers-reduced-motion: reduce) {
+      #chat-modal, .chat-box { transition: none !important; }
+    }
+    .chat-box iframe { width: 100%; height: 100%; border: 0; display: block; }
+    #chat-close {
+      position: absolute;
+      top: 0.55rem;
+      right: 0.7rem;
+      width: 2rem;
+      height: 2rem;
+      border: none;
+      border-radius: 50%;
+      background: rgba(0, 0, 0, 0.12);
+      color: inherit;
+      font-size: 1rem;
+      cursor: pointer;
+    }
+
     /* ===== 좁은 화면: 한 줄로 쌓고 메뉴는 위쪽 가로로 ===== */
     @media (max-width: 960px) {
       [id] { scroll-margin-top: 4.5rem; }
@@ -503,6 +573,14 @@
       <p>🕔 식당 영업시간과 쉬는 날은 방문 전에 꼭 확인하세요.</p>
     </footer>
 
+  </div>
+
+  <button id="chat-open" type="button" aria-haspopup="dialog">💬 에이전트와 채팅</button>
+  <div id="chat-modal" role="dialog" aria-modal="true" aria-label="제주 맛집 에이전트 채팅">
+    <div class="chat-box">
+      <button id="chat-close" type="button" aria-label="채팅 닫기">✕</button>
+      <iframe id="chat-frame" title="제주 맛집 에이전트 채팅"></iframe>
+    </div>
   </div>
 
   <button id="to-top" type="button" aria-label="맨 위로">⬆</button>
@@ -763,6 +841,27 @@
     }
 
     // 맨 위로 가기
+    // 에이전트 채팅: 버튼을 누르면 agent.html 을 팝업 안에 불러옵니다
+    const chatModal = document.getElementById('chat-modal');
+    const chatFrame = document.getElementById('chat-frame');
+    const chatBox = chatModal.querySelector('.chat-box');
+    const chatOpenBtn = document.getElementById('chat-open');
+    function openChat() {
+      if (!chatFrame.getAttribute('src')) chatFrame.src = 'agent.html';
+      // 채팅 버튼의 중심을 기준점으로 삼아, 버튼에서 커지고 버튼으로 줄어들게 함
+      const b = chatOpenBtn.getBoundingClientRect();
+      // offsetLeft/Top 은 scale 의 영향을 받지 않는 원래 위치
+      chatBox.style.transformOrigin =
+        (b.left + b.width / 2 - chatBox.offsetLeft) + 'px ' +
+        (b.top + b.height / 2 - chatBox.offsetTop) + 'px';
+      chatModal.classList.add('open');
+    }
+    function closeChat() { chatModal.classList.remove('open'); }
+    document.getElementById('chat-open').addEventListener('click', openChat);
+    document.getElementById('chat-close').addEventListener('click', closeChat);
+    chatModal.addEventListener('click', e => { if (e.target === chatModal) closeChat(); });
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') closeChat(); });
+
     const topBtn = document.getElementById('to-top');
     window.addEventListener('scroll', () => {
       topBtn.classList.toggle('show', window.scrollY > 300);
