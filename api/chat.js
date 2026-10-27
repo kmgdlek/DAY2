@@ -16,6 +16,11 @@ module.exports = async (req, res) => {
     res.status(500).json({ error: 'OPENAI_API_KEY 환경변수가 설정되지 않았습니다.' });
     return;
   }
+  // 상태 확인용: 채팅창이 열릴 때 '온라인/오프라인' 표시를 위해 호출 (OpenAI는 호출하지 않음)
+  if (req.method === 'GET') {
+    res.status(200).json({ ok: true });
+    return;
+  }
   if (req.method !== 'POST') {
     res.status(405).json({ error: 'POST 요청만 사용할 수 있습니다.' });
     return;

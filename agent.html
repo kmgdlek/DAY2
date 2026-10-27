@@ -51,6 +51,17 @@
       border-bottom: 1px solid var(--line);
       font-weight: 700;
     }
+    .status { margin-left: 0.4rem; font-size: 0.72rem; font-weight: 400; color: var(--muted); white-space: nowrap; }
+    .status::before {
+      content: '';
+      display: inline-block;
+      width: 7px; height: 7px;
+      margin-right: 0.25rem;
+      border-radius: 50%;
+      background: #b0b0b0;
+    }
+    .status.online { color: #2e9d5b; }
+    .status.online::before { background: #2fbf71; }
     header small { display: block; font-weight: 400; color: var(--muted); margin-top: 0.15rem; }
 
     #log {
@@ -143,7 +154,7 @@
 </head>
 <body>
   <div class="chat">
-    <header>🍊 제주 맛집 에이전트<small>제주도 맛집을 알아봐 드려요 · 날씨와 체험 장소도 함께</small></header>
+    <header>🍊 제주 맛집 에이전트<span id="status" class="status" role="status">오프라인</span><small>제주도 맛집을 알아봐 드려요 · 날씨와 체험 장소도 함께</small></header>
 
     <div id="log" role="log" aria-live="polite"></div>
 
@@ -180,6 +191,15 @@
     }
 
     const notice = document.getElementById('notice');
+    const statusEl = document.getElementById('status');
+
+    // 온라인 = ChatGPT 서버(/api/chat)에 연결됨, 오프라인 = 연결 안 됨(가짜 답변 사용)
+    function setOnline(on) {
+      statusEl.textContent = on ? '온라인' : '오프라인';
+      statusEl.classList.toggle('online', on);
+    }
+    fetch('/api/chat').then(r => setOnline(r.ok)).catch(() => setOnline(false));
+
     const history = [];   // ChatGPT 에 함께 보내는 대화 기록
     let busy = false;
 
@@ -212,12 +232,14 @@
       let reply;
       try {
         reply = await askAgent(text);
+        setOnline(true);
         notice.textContent = '※ ChatGPT가 만든 답변입니다. 영업시간·가격은 방문 전에 꼭 확인하세요.';
         history.push({ role: 'user', content: text }, { role: 'assistant', content: reply });
       } catch (e) {
         // API 에 연결되지 않으면(로컬, GitHub Pages 등) 미리 정해 둔 가짜 답을 돌려 씀
         reply = REPLIES[replyIndex];
         replyIndex = (replyIndex + 1) % REPLIES.length;
+        setOnline(false);
         notice.textContent = '※ ChatGPT에 연결되지 않아 미리 정해 둔 가짜 답변을 보여주고 있어요.';
       }
       await minWait;
