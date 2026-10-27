@@ -75,6 +75,26 @@
     @keyframes pop { from { transform: translateY(6px); opacity: 0; } to { transform: none; opacity: 1; } }
     @media (prefers-reduced-motion: reduce) { .msg { animation: none; } }
 
+    .suggest {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 0.4rem;
+      padding: 0.6rem 1rem 0;
+      border-top: 1px solid var(--line);
+    }
+    .suggest button {
+      max-width: 100%;
+      padding: 0.45rem 0.9rem;
+      font-size: 0.88rem;
+      text-align: left;
+      color: var(--text);
+      background: var(--bg);
+      border: 1px solid var(--accent);
+      border-radius: 999px;
+    }
+    .suggest button:hover { background: var(--accent); color: #fff; }
+
     form {
       display: flex;
       gap: 0.5rem;
@@ -101,6 +121,17 @@
       color: #fff;
       cursor: pointer;
     }
+    .typing { display: flex; align-items: center; gap: 0.35rem; color: var(--muted); font-size: 0.88rem; }
+    .typing i {
+      width: 6px; height: 6px; border-radius: 50%;
+      background: var(--muted);
+      animation: blink 1s infinite ease-in-out;
+    }
+    .typing i:nth-of-type(2) { animation-delay: 0.15s; }
+    .typing i:nth-of-type(3) { animation-delay: 0.3s; }
+    @keyframes blink { 0%, 80%, 100% { opacity: 0.25; transform: none; } 40% { opacity: 1; transform: translateY(-3px); } }
+    @media (prefers-reduced-motion: reduce) { .typing i { animation: none; } }
+    form button:disabled { opacity: 0.45; cursor: not-allowed; }
     .notice {
       margin: 0;
       padding: 0 1rem 0.7rem;
@@ -116,9 +147,11 @@
 
     <div id="log" role="log" aria-live="polite"></div>
 
+    <div class="suggest" id="suggest" aria-label="추천 질문"></div>
+
     <form id="form">
       <input id="input" type="text" placeholder="제주 맛집에 대해 물어보세요" aria-label="메시지 입력" autocomplete="off">
-      <button type="submit">보내기</button>
+      <button id="send" type="submit" disabled>보내기</button>
     </form>
 
     <p class="notice">※ 지금 답변은 미리 정해 둔 가짜 답변입니다.</p>
@@ -146,16 +179,51 @@
       log.scrollTop = log.scrollHeight;
     }
 
+    function send(text) {
+      addMessage(text, 'me');
+      const reply = REPLIES[replyIndex];
+      replyIndex = (replyIndex + 1) % REPLIES.length;
+
+      // 답이 나오기 전 1초 동안 '생각 중…' 점 세 개
+      const typing = document.createElement('div');
+      typing.className = 'msg bot typing';
+      typing.setAttribute('aria-label', '생각 중');
+      typing.innerHTML = '<span>생각 중…</span><i></i><i></i><i></i>';
+      log.appendChild(typing);
+      log.scrollTop = log.scrollHeight;
+
+      setTimeout(() => {
+        typing.remove();
+        addMessage(reply, 'bot');
+      }, REPLY_DELAY_MS);
+    }
+
+    // 빈칸(공백만 있는 경우 포함)은 보낼 수 없게 막음
+    const sendBtn = document.getElementById('send');
+    input.addEventListener('input', () => { sendBtn.disabled = !input.value.trim(); });
+
     form.addEventListener('submit', e => {
       e.preventDefault();
       const text = input.value.trim();
       if (!text) return;
-      addMessage(text, 'me');
       input.value = '';
+      sendBtn.disabled = true;
+      send(text);
+    });
 
-      const reply = REPLIES[replyIndex];
-      replyIndex = (replyIndex + 1) % REPLIES.length;
-      setTimeout(() => addMessage(reply, 'bot'), REPLY_DELAY_MS);
+    // 추천 질문 (IP_메모.md 의 질문 예시 3개): 누르면 내가 보낸 것처럼 진행
+    const SUGGESTIONS = [
+      '제주 시내에서 맛집 3곳 어디야?',
+      '성산일출봉 근처에서 점심 먹을 만한 식당이랑 가까운 체험 장소가 어디야?',
+      '비 오는 날 제주에서 실내 체험이랑 맛집을 묶어서 하루 코스 만들 수 있어?'
+    ];
+    const suggestEl = document.getElementById('suggest');
+    SUGGESTIONS.forEach(q => {
+      const b = document.createElement('button');
+      b.type = 'button';
+      b.textContent = q;
+      b.addEventListener('click', () => send(q));
+      suggestEl.appendChild(b);
     });
 
     input.focus();
