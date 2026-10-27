@@ -1,0 +1,276 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>반응형 카테고리 페이지</title>
+  <style>
+    :root {
+      --bg: #f5f7fa;
+      --surface: #ffffff;
+      --text: #222b36;
+      --muted: #6b7684;
+      --line: #e3e8ef;
+      --accent: #3b82f6;
+      --soft: #eaf2ff;
+      --shadow: rgba(20, 30, 50, 0.1);
+      --bar-h: 3.6rem;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #12161c;
+        --surface: #1b2129;
+        --text: #eef1f5;
+        --muted: #98a3b1;
+        --line: #2c3541;
+        --soft: #1f2f4a;
+        --shadow: rgba(0, 0, 0, 0.45);
+      }
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body {
+      margin: 0;
+      font-family: -apple-system, "Apple SD Gothic Neo", "Malgun Gothic", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+    }
+
+    /* ===== 상단 바: 로고 + 메뉴 5개 ===== */
+    .topbar {
+      position: sticky;
+      top: 0;
+      z-index: 50;
+      height: var(--bar-h);
+      display: flex;
+      align-items: center;
+      gap: 1rem;
+      padding: 0 1rem;
+      background: var(--surface);
+      border-bottom: 1px solid var(--line);
+      box-shadow: 0 2px 8px var(--shadow);
+    }
+    .logo { font-weight: 800; font-size: 1.15rem; margin-right: auto; color: var(--text); text-decoration: none; }
+    .menu { list-style: none; margin: 0; padding: 0; display: flex; gap: 0.25rem; }
+    .menu a {
+      display: block;
+      padding: 0.5rem 0.9rem;
+      border-radius: 999px;
+      color: var(--text);
+      text-decoration: none;
+    }
+    .menu a:hover { background: var(--soft); color: var(--accent); }
+    .menu a[aria-current="page"] { background: var(--accent); color: #fff; font-weight: 700; }
+
+    /* 햄버거 버튼 (모바일에서만 보임) */
+    .burger {
+      display: none;
+      width: 2.6rem;
+      height: 2.6rem;
+      padding: 0;
+      border: none;
+      border-radius: 10px;
+      background: transparent;
+      cursor: pointer;
+      position: relative;
+    }
+    .burger span {
+      position: absolute;
+      left: 0.6rem; right: 0.6rem;
+      height: 2px;
+      border-radius: 2px;
+      background: var(--text);
+      transition: transform 0.25s ease, opacity 0.2s ease, top 0.25s ease;
+    }
+    .burger span:nth-child(1) { top: 0.85rem; }
+    .burger span:nth-child(2) { top: 1.25rem; }
+    .burger span:nth-child(3) { top: 1.65rem; }
+    .burger[aria-expanded="true"] span:nth-child(1) { top: 1.25rem; transform: rotate(45deg); }
+    .burger[aria-expanded="true"] span:nth-child(2) { opacity: 0; }
+    .burger[aria-expanded="true"] span:nth-child(3) { top: 1.25rem; transform: rotate(-45deg); }
+    .burger:focus-visible, .menu a:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+    .backdrop { display: none; }
+
+    /* ===== 본문 ===== */
+    main { max-width: 1000px; margin: 0 auto; padding: 1.25rem 1rem 3rem; }
+    .panel { display: none; }
+    .panel.show { display: block; animation: fade 0.25s ease; }
+    @keyframes fade { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+    .panel h1 { margin: 0 0 0.25rem; font-size: 1.6rem; }
+    .panel .lead { margin: 0 0 1.25rem; color: var(--muted); }
+    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 1rem; }
+    .card {
+      background: var(--surface);
+      border-radius: 14px;
+      padding: 1.1rem;
+      box-shadow: 0 2px 8px var(--shadow);
+    }
+    .card .emoji { font-size: 2rem; }
+    .card h2 { margin: 0.3rem 0 0.2rem; font-size: 1.05rem; }
+    .card p { margin: 0; color: var(--muted); font-size: 0.92rem; }
+    .map-box {
+      display: grid;
+      place-items: center;
+      min-height: 280px;
+      border-radius: 14px;
+      border: 2px dashed var(--line);
+      background: var(--surface);
+      color: var(--muted);
+      text-align: center;
+      padding: 1rem;
+    }
+    .note { margin-top: 1rem; font-size: 0.8rem; color: var(--muted); }
+
+    /* ===== 모바일: 메뉴를 햄버거 아이콘으로 ===== */
+    @media (max-width: 768px) {
+      .burger { display: block; }
+      .menu {
+        position: fixed;
+        top: var(--bar-h);
+        right: 0;
+        bottom: 0;
+        width: min(260px, 80vw);
+        flex-direction: column;
+        gap: 0.25rem;
+        padding: 1rem;
+        background: var(--surface);
+        box-shadow: -4px 0 16px var(--shadow);
+        transform: translateX(100%);
+        visibility: hidden;
+        transition: transform 0.28s ease, visibility 0s linear 0.28s;
+        z-index: 60;
+      }
+      .menu.open { transform: none; visibility: visible; transition: transform 0.28s ease, visibility 0s; }
+      .menu a { padding: 0.85rem 1rem; border-radius: 10px; font-size: 1.05rem; }
+      .backdrop {
+        display: block;
+        position: fixed;
+        inset: var(--bar-h) 0 0 0;
+        background: rgba(0, 0, 0, 0.4);
+        opacity: 0;
+        pointer-events: none;
+        transition: opacity 0.28s ease;
+        z-index: 40;
+      }
+      .backdrop.show { opacity: 1; pointer-events: auto; }
+      .panel h1 { font-size: 1.35rem; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      * { transition: none !important; animation: none !important; }
+    }
+  </style>
+</head>
+<body>
+  <header class="topbar">
+    <a class="logo" href="#food">🧭 카테고리</a>
+
+    <button id="burger" class="burger" type="button" aria-label="메뉴 열기" aria-expanded="false" aria-controls="menu">
+      <span></span><span></span><span></span>
+    </button>
+
+    <nav aria-label="주요 카테고리">
+      <ul id="menu" class="menu">
+        <li><a href="#food">🍜 음식</a></li>
+        <li><a href="#furniture">🛋️ 가구</a></li>
+        <li><a href="#realestate">🏠 부동산</a></li>
+        <li><a href="#stock">📈 주식</a></li>
+        <li><a href="#map">🗺️ 지도</a></li>
+      </ul>
+    </nav>
+  </header>
+  <div id="backdrop" class="backdrop"></div>
+
+  <main>
+    <section id="food" class="panel">
+      <h1>🍜 음식</h1>
+      <p class="lead">오늘 뭐 먹지? 인기 메뉴 모아보기</p>
+      <div class="grid">
+        <article class="card"><div class="emoji">🥩</div><h2>흑돼지구이</h2><p>쫄깃하고 고소한 제주의 대표 메뉴</p></article>
+        <article class="card"><div class="emoji">🍲</div><h2>고기국수</h2><p>진한 사골 국물에 면을 말아 낸 한 그릇</p></article>
+        <article class="card"><div class="emoji">🐠</div><h2>갈치조림</h2><p>은갈치와 무가 어우러진 칼칼한 맛</p></article>
+        <article class="card"><div class="emoji">🍊</div><h2>감귤 디저트</h2><p>달콤새콤한 후식과 간식</p></article>
+      </div>
+    </section>
+
+    <section id="furniture" class="panel">
+      <h1>🛋️ 가구</h1>
+      <p class="lead">공간을 바꾸는 가구 아이디어</p>
+      <div class="grid">
+        <article class="card"><div class="emoji">🛏️</div><h2>침대·매트리스</h2><p>숙면을 위한 사이즈와 단단함 고르기</p></article>
+        <article class="card"><div class="emoji">🪑</div><h2>의자·책상</h2><p>오래 앉아도 편한 작업 공간</p></article>
+        <article class="card"><div class="emoji">🛋️</div><h2>소파</h2><p>거실 분위기를 좌우하는 큰 가구</p></article>
+        <article class="card"><div class="emoji">🗄️</div><h2>수납장</h2><p>좁은 집을 넓게 쓰는 정리 가구</p></article>
+      </div>
+    </section>
+
+    <section id="realestate" class="panel">
+      <h1>🏠 부동산</h1>
+      <p class="lead">집을 구할 때 확인할 것들 (예시 내용)</p>
+      <div class="grid">
+        <article class="card"><div class="emoji">📍</div><h2>위치·교통</h2><p>역과의 거리, 출퇴근 시간 확인</p></article>
+        <article class="card"><div class="emoji">📄</div><h2>계약 서류</h2><p>등기부등본과 계약 조건은 꼼꼼히</p></article>
+        <article class="card"><div class="emoji">💰</div><h2>예산 계획</h2><p>보증금·월세·관리비를 합쳐서 계산</p></article>
+      </div>
+      <p class="note">※ 예시 문구이며 실제 매물·가격 정보가 아닙니다.</p>
+    </section>
+
+    <section id="stock" class="panel">
+      <h1>📈 주식</h1>
+      <p class="lead">투자 공부를 시작하는 기본 개념 (예시 내용)</p>
+      <div class="grid">
+        <article class="card"><div class="emoji">📊</div><h2>기본 용어</h2><p>주가, 시가총액, 배당 등 용어 익히기</p></article>
+        <article class="card"><div class="emoji">🧮</div><h2>분산 투자</h2><p>한 곳에 몰지 않고 나눠서 담는 방법</p></article>
+        <article class="card"><div class="emoji">⏳</div><h2>장기 관점</h2><p>단기 변동보다 긴 흐름을 보는 습관</p></article>
+      </div>
+      <p class="note">※ 학습용 예시이며 특정 종목에 대한 투자 권유나 조언이 아닙니다.</p>
+    </section>
+
+    <section id="map" class="panel">
+      <h1>🗺️ 지도</h1>
+      <p class="lead">위치를 확인하는 곳</p>
+      <div class="map-box">
+        <div>
+          <div style="font-size:2.5rem">🗺️</div>
+          <p>여기에 지도가 들어갈 자리입니다.<br>(지도 API를 연결하면 실제 지도가 표시됩니다)</p>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    const burger = document.getElementById('burger');
+    const menu = document.getElementById('menu');
+    const backdrop = document.getElementById('backdrop');
+    const links = Array.from(menu.querySelectorAll('a'));
+    const panels = Array.from(document.querySelectorAll('.panel'));
+
+    // 햄버거 메뉴 열기/닫기
+    function setMenu(open) {
+      menu.classList.toggle('open', open);
+      backdrop.classList.toggle('show', open);
+      burger.setAttribute('aria-expanded', String(open));
+      burger.setAttribute('aria-label', open ? '메뉴 닫기' : '메뉴 열기');
+    }
+    burger.addEventListener('click', () => setMenu(!menu.classList.contains('open')));
+    backdrop.addEventListener('click', () => setMenu(false));
+    document.addEventListener('keydown', e => { if (e.key === 'Escape') setMenu(false); });
+    // 화면이 넓어지면(PC) 열려 있던 메뉴를 정리
+    window.matchMedia('(min-width: 769px)').addEventListener('change', e => { if (e.matches) setMenu(false); });
+
+    // 카테고리 전환: 주소의 #이름 에 맞는 패널만 보여줌
+    function show() {
+      const id = panels.some(p => '#' + p.id === location.hash) ? location.hash.slice(1) : 'food';
+      panels.forEach(p => p.classList.toggle('show', p.id === id));
+      links.forEach(a => {
+        if (a.getAttribute('href') === '#' + id) a.setAttribute('aria-current', 'page');
+        else a.removeAttribute('aria-current');
+      });
+      window.scrollTo(0, 0);
+    }
+    window.addEventListener('hashchange', () => { show(); setMenu(false); });
+    show();
+  </script>
+</body>
+</html>
