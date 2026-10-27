@@ -317,7 +317,7 @@
     }
     #to-top.show { opacity: 1; pointer-events: auto; }
 
-    /* ===== 에이전트 채팅 (agent.html 을 팝업으로 띄움) ===== */
+    /* ===== 팝업 (agent.html 채팅, reactive.html 카테고리 페이지를 띄움) ===== */
     #chat-open {
       position: fixed;
       right: 1rem;
@@ -332,7 +332,35 @@
       cursor: pointer;
       box-shadow: 0 2px 8px var(--shadow);
     }
-    #chat-modal {
+    /* 카테고리 페이지(reactive.html)를 여는 큰 원형 버튼 */
+    #cat-open {
+      position: fixed;
+      left: 1rem;
+      bottom: 1rem;
+      z-index: 30;
+      width: 6rem;
+      height: 6rem;
+      padding: 0;
+      border: none;
+      border-radius: 50%;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 0.1rem;
+      background: linear-gradient(135deg, #1e88c7, #6a5af9);
+      color: #fff;
+      font-size: 0.9rem;
+      font-weight: 700;
+      cursor: pointer;
+      box-shadow: 0 6px 18px rgba(30, 80, 160, 0.45);
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+    #cat-open .big { font-size: 2.2rem; line-height: 1; }
+    #cat-open:hover { transform: scale(1.06); box-shadow: 0 8px 22px rgba(30, 80, 160, 0.55); }
+    #cat-open:active { transform: scale(0.96); }
+    .popup-box.wide { width: min(1100px, 100%); height: min(860px, 100%); }
+    .popup {
       position: fixed;
       inset: 0;
       z-index: 100;
@@ -345,13 +373,13 @@
       pointer-events: none;
       transition: background 0.35s ease, visibility 0s linear 0.35s;
     }
-    #chat-modal.open {
+    .popup.open {
       background: rgba(0, 0, 0, 0.5);
       visibility: visible;
       pointer-events: auto;
       transition: background 0.35s ease, visibility 0s;
     }
-    .chat-box {
+    .popup-box {
       position: relative;
       width: min(640px, 100%);
       height: min(760px, 100%);
@@ -364,16 +392,16 @@
       opacity: 0;
       transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1), opacity 0.3s ease;
     }
-    #chat-modal.open .chat-box {
+    .popup.open .popup-box {
       transform: none;
       opacity: 1;
       transition: transform 0.4s cubic-bezier(0.2, 0.9, 0.3, 1), opacity 0.25s ease;
     }
     @media (prefers-reduced-motion: reduce) {
-      #chat-modal, .chat-box { transition: none !important; }
+      .popup, .popup-box { transition: none !important; }
     }
-    .chat-box iframe { width: 100%; height: 100%; border: 0; display: block; }
-    #chat-close {
+    .popup-box iframe { width: 100%; height: 100%; border: 0; display: block; }
+    .popup-close {
       position: absolute;
       top: 0.55rem;
       right: 0.7rem;
@@ -451,11 +479,20 @@
       .photo-form input { flex: 1 1 100%; }
       .photo-form button { flex: 1 1 100%; }
       .photo-pager button { white-space: nowrap; padding: 0.6rem 0.6rem; font-size: 0.88rem; }
+      #cat-open { left: 0.75rem; bottom: 0.75rem; width: 4.8rem; height: 4.8rem; font-size: 0.78rem; }
+      #cat-open .big { font-size: 1.8rem; }
       #chat-open { right: 0.75rem; bottom: 4.3rem; padding: 0.65rem 0.95rem; font-size: 0.92rem; }
       #to-top { right: 0.75rem; bottom: 0.75rem; width: 2.8rem; height: 2.8rem; }
       /* 채팅은 전체 화면으로 */
-      #chat-modal { padding: 0; }
-      .chat-box { width: 100%; height: 100%; border-radius: 0; }
+      .popup { padding: 0; }
+      .popup-box, .popup-box.wide { width: 100%; height: 100%; border-radius: 0; }
+      /* 카테고리 페이지는 오른쪽 위에 햄버거가 있으므로, 닫기 버튼은 오른쪽 아래로 */
+      #cat-close {
+        top: auto; bottom: 1rem; right: 1rem;
+        width: 2.8rem; height: 2.8rem;
+        background: rgba(20, 30, 50, 0.85); color: #fff;
+        box-shadow: 0 2px 8px rgba(0, 0, 0, 0.35);
+      }
     }
     @media (prefers-reduced-motion: reduce) {
       html { scroll-behavior: auto; }
@@ -626,10 +663,20 @@
   </div>
 
   <button id="chat-open" type="button" aria-haspopup="dialog">💬 에이전트와 채팅</button>
-  <div id="chat-modal" role="dialog" aria-modal="true" aria-label="제주 맛집 에이전트 채팅">
-    <div class="chat-box">
-      <button id="chat-close" type="button" aria-label="채팅 닫기">✕</button>
+  <div id="chat-modal" class="popup" role="dialog" aria-modal="true" aria-label="제주 맛집 에이전트 채팅">
+    <div class="popup-box">
+      <button id="chat-close" class="popup-close" type="button" aria-label="채팅 닫기">✕</button>
       <iframe id="chat-frame" title="제주 맛집 에이전트 채팅"></iframe>
+    </div>
+  </div>
+
+  <button id="cat-open" type="button" aria-haspopup="dialog" aria-label="카테고리 페이지 열기">
+    <span class="big" aria-hidden="true">🧭</span><span>카테고리</span>
+  </button>
+  <div id="cat-modal" class="popup" role="dialog" aria-modal="true" aria-label="카테고리 페이지">
+    <div class="popup-box wide">
+      <button id="cat-close" class="popup-close" type="button" aria-label="카테고리 닫기">✕</button>
+      <iframe id="cat-frame" title="카테고리 페이지"></iframe>
     </div>
   </div>
 
@@ -932,26 +979,29 @@
       kick();
     })();
 
-    // 에이전트 채팅: 버튼을 누르면 agent.html 을 팝업 안에 불러옵니다
-    const chatModal = document.getElementById('chat-modal');
-    const chatFrame = document.getElementById('chat-frame');
-    const chatBox = chatModal.querySelector('.chat-box');
-    const chatOpenBtn = document.getElementById('chat-open');
-    function openChat() {
-      if (!chatFrame.getAttribute('src')) chatFrame.src = 'agent.html';
-      // 채팅 버튼의 중심을 기준점으로 삼아, 버튼에서 커지고 버튼으로 줄어들게 함
-      const b = chatOpenBtn.getBoundingClientRect();
-      // offsetLeft/Top 은 scale 의 영향을 받지 않는 원래 위치
-      chatBox.style.transformOrigin =
-        (b.left + b.width / 2 - chatBox.offsetLeft) + 'px ' +
-        (b.top + b.height / 2 - chatBox.offsetTop) + 'px';
-      chatModal.classList.add('open');
+    // 팝업: 버튼을 누르면 해당 페이지를 팝업 안에 불러오고, 버튼에서 커지고 버튼으로 줄어듦
+    function setupPopup(openId, closeId, popupId, frameId, src) {
+      const openBtn = document.getElementById(openId);
+      const popup = document.getElementById(popupId);
+      const frame = document.getElementById(frameId);
+      const box = popup.querySelector('.popup-box');
+      function open() {
+        if (!frame.getAttribute('src')) frame.src = src;
+        // 버튼의 중심을 기준점으로 삼음 (offsetLeft/Top 은 scale 의 영향을 받지 않는 원래 위치)
+        const b = openBtn.getBoundingClientRect();
+        box.style.transformOrigin =
+          (b.left + b.width / 2 - box.offsetLeft) + 'px ' +
+          (b.top + b.height / 2 - box.offsetTop) + 'px';
+        popup.classList.add('open');
+      }
+      function close() { popup.classList.remove('open'); }
+      openBtn.addEventListener('click', open);
+      document.getElementById(closeId).addEventListener('click', close);
+      popup.addEventListener('click', e => { if (e.target === popup) close(); });
+      document.addEventListener('keydown', e => { if (e.key === 'Escape') close(); });
     }
-    function closeChat() { chatModal.classList.remove('open'); }
-    document.getElementById('chat-open').addEventListener('click', openChat);
-    document.getElementById('chat-close').addEventListener('click', closeChat);
-    chatModal.addEventListener('click', e => { if (e.target === chatModal) closeChat(); });
-    document.addEventListener('keydown', e => { if (e.key === 'Escape') closeChat(); });
+    setupPopup('chat-open', 'chat-close', 'chat-modal', 'chat-frame', 'agent.html');   // 에이전트 채팅
+    setupPopup('cat-open', 'cat-close', 'cat-modal', 'cat-frame', 'reactive.html');    // 카테고리 페이지
 
     const topBtn = document.getElementById('to-top');
     window.addEventListener('scroll', () => {
