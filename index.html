@@ -165,7 +165,7 @@
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
       gap: 1rem;
-      align-items: stretch;
+      align-items: start;
     }
     .card {
       --card-color: var(--accent);
@@ -180,12 +180,14 @@
       transform: translateY(-4px);
       box-shadow: 0 8px 20px var(--shadow);
     }
+    /* 보이는 카드가 모두 펼쳐졌을 때만 같은 줄 높이를 맞춤 */
+    .cards.all-open { align-items: stretch; }
     .card.pre {
       opacity: 0;
       transform: translateY(24px);
     }
     @media (prefers-reduced-motion: reduce) {
-      .card { transition: none; }
+      .card, .card-body { transition: none; }
       .card.pre { opacity: 1; transform: none; }
     }
     .card:nth-child(1) { --card-color: #ff8a3d; }
@@ -211,8 +213,15 @@
     .card h2::after { content: "▾"; }
     .card.collapsed h2::after { content: "▸"; }
     .card p { margin: 0.5rem 0; line-height: 1.5; }
-    .card.collapsed p { display: none; }
-    .card h2 + p { margin-top: 0.9rem; }
+    /* 부드러운 접기/펼치기: 높이를 0fr ↔ 1fr 로 전환 */
+    .card-body {
+      display: grid;
+      grid-template-rows: 1fr;
+      opacity: 1;
+      transition: grid-template-rows 0.4s ease, opacity 0.3s ease;
+    }
+    .card-body > .inner { overflow: hidden; min-height: 0; padding-top: 0.5rem; }
+    .card.collapsed .card-body { grid-template-rows: 0fr; opacity: 0; }
     .card.hidden { display: none; }
     mark { background: #ffe08a; color: #222; border-radius: 3px; }
     #empty { display: none; text-align: center; color: var(--muted); padding: 2rem 0; }
@@ -482,6 +491,14 @@
     // 카드 접기/펼치기
     const cards = Array.from(document.querySelectorAll('.card'));
     cards.forEach(card => {
+      // 제목 아래 문단들을 하나로 묶어 높이 애니메이션을 줄 수 있게 함
+      const body = document.createElement('div');
+      body.className = 'card-body';
+      const inner = document.createElement('div');
+      inner.className = 'inner';
+      card.querySelectorAll('p').forEach(p => inner.appendChild(p));
+      body.appendChild(inner);
+      card.appendChild(body);
       card.classList.add('collapsed');
       const h2 = card.querySelector('h2');
       h2.setAttribute('role', 'button');
@@ -492,6 +509,16 @@
         if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(); }
       });
     });
+    const cardsBox = document.querySelector('.cards');
+    function syncAlign() {
+      const visible = cards.filter(c => !c.classList.contains('hidden'));
+      cardsBox.classList.toggle('all-open',
+        visible.length > 0 && visible.every(c => !c.classList.contains('collapsed')));
+    }
+    const alignObserver = new MutationObserver(syncAlign);
+    cards.forEach(c => alignObserver.observe(c, { attributes: true, attributeFilter: ['class'] }));
+    syncAlign();
+
     document.getElementById('expand-all').addEventListener('click', () => {
       cards.forEach(c => c.classList.remove('collapsed'));
     });
