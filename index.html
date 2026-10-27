@@ -5,7 +5,27 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>내 취향 카드</title>
   <style>
+    :root {
+      --bg: #f4f6f8;
+      --surface: #fff;
+      --text: #222;
+      --muted: #666;
+      --border: #e3e6ea;
+      --accent: #ff8a3d;
+      --shadow: rgba(0, 0, 0, 0.08);
+    }
+    :root[data-theme="dark"] {
+      --bg: #14171a;
+      --surface: #1f2428;
+      --text: #e8eaed;
+      --muted: #9aa0a6;
+      --border: #2f353a;
+      --accent: #ff9d5c;
+      --shadow: rgba(0, 0, 0, 0.4);
+    }
+
     * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
 
     body {
       margin: 0;
@@ -13,13 +33,15 @@
       display: flex;
       flex-direction: column;
       font-family: sans-serif;
-      background: #f4f6f8;
-      color: #222;
+      background: var(--bg);
+      color: var(--text);
+      transition: background 0.2s, color 0.2s;
     }
 
     /* 헤더 */
     header {
-      background: #ff8a3d;
+      position: relative;
+      background: linear-gradient(135deg, #ff8a3d 0%, #f06a5c 45%, #1e88c7 100%);
       color: #fff;
       text-align: center;
       padding: 1.5rem 1rem;
@@ -34,11 +56,23 @@
     }
     header h1 { margin: 0 0 0.25rem; font-size: 1.75rem; }
     header p { margin: 0; opacity: 0.9; }
+    #theme-btn {
+      position: absolute;
+      top: 0.75rem;
+      right: 0.75rem;
+      border: none;
+      border-radius: 999px;
+      padding: 0.4rem 0.8rem;
+      background: rgba(255, 255, 255, 0.25);
+      color: #fff;
+      font-size: 0.95rem;
+      cursor: pointer;
+    }
 
     /* 네비게이션 메뉴 */
     nav {
-      background: #fff;
-      border-bottom: 1px solid #e3e6ea;
+      background: var(--surface);
+      border-bottom: 1px solid var(--border);
     }
     nav ul {
       list-style: none;
@@ -52,10 +86,10 @@
     nav a {
       display: block;
       padding: 0.9rem 1.25rem;
-      color: #444;
+      color: var(--text);
       text-decoration: none;
     }
-    nav a:hover { color: #ff8a3d; }
+    nav a:hover { color: var(--accent); }
 
     /* 바디 */
     main {
@@ -63,21 +97,104 @@
       width: 100%;
       max-width: 960px;
       margin: 0 auto;
-      padding: 2rem 1rem;
+      padding: 1.5rem 1rem 2rem;
     }
+
+    /* 도구줄: 검색 + 좋아요 */
+    .toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1rem;
+      margin-bottom: 1rem;
+    }
+    .search-wrap { flex: 1 1 260px; }
+    #search {
+      width: 100%;
+      padding: 0.75rem 1rem;
+      font-size: 1rem;
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      background: var(--surface);
+      color: var(--text);
+    }
+    #search:focus { outline: 2px solid var(--accent); }
+    .like-box {
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      background: var(--surface);
+      border-radius: 12px;
+      padding: 0.5rem 1rem;
+      box-shadow: 0 2px 8px var(--shadow);
+    }
+    #count { font-size: 1.5rem; font-weight: bold; min-width: 2.5rem; text-align: center; }
+    #btn {
+      font-size: 1rem;
+      padding: 0.5rem 1.1rem;
+      border: none;
+      border-radius: 8px;
+      background: var(--accent);
+      color: #fff;
+      cursor: pointer;
+    }
+    .toolbar-row { display: flex; gap: 0.5rem; width: 100%; font-size: 0.9rem; color: var(--muted); }
+    .toolbar-row button {
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--text);
+      border-radius: 8px;
+      padding: 0.3rem 0.8rem;
+      cursor: pointer;
+    }
+    #result-info { margin-left: auto; align-self: center; }
+
     .cards {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
       gap: 1rem;
+      align-items: start;
     }
     .card {
-      background: #fff;
+      --card-color: var(--accent);
+      background: var(--surface);
       border-radius: 12px;
+      border-left: 6px solid var(--card-color);
       padding: 1.25rem;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+      box-shadow: 0 2px 8px var(--shadow);
+      transition: transform 0.2s, box-shadow 0.2s;
     }
-    .card h2 { margin-top: 0; font-size: 1.15rem; color: #ff8a3d; }
+    .card:hover {
+      transform: translateY(-4px);
+      box-shadow: 0 8px 20px var(--shadow);
+    }
+    .card:nth-child(1) { --card-color: #ff8a3d; }
+    .card:nth-child(2) { --card-color: #4caf50; }
+    .card:nth-child(3) { --card-color: #1e88c7; }
+    .card:nth-child(4) { --card-color: #8e5bd1; }
+    .card:nth-child(5) { --card-color: #e5484d; }
+    .card:nth-child(6) { --card-color: #0fa3a3; }
+    .card:nth-child(7) { --card-color: #3b6fe0; }
+    .card:nth-child(8) { --card-color: #e0a100; }
+    .card:nth-child(9) { --card-color: #d6409f; }
+    .card:nth-child(10) { --card-color: #5a6b7b; }
+    .card h2 {
+      margin: 0;
+      font-size: 1.15rem;
+      color: var(--card-color);
+      cursor: pointer;
+      user-select: none;
+      display: flex;
+      justify-content: space-between;
+      gap: 0.5rem;
+    }
+    .card h2::after { content: "▾"; }
+    .card.collapsed h2::after { content: "▸"; }
     .card p { margin: 0.5rem 0; line-height: 1.5; }
+    .card.collapsed p { display: none; }
+    .card h2 + p { margin-top: 0.9rem; }
+    .card.hidden { display: none; }
+    mark { background: #ffe08a; color: #222; border-radius: 3px; }
+    #empty { display: none; text-align: center; color: var(--muted); padding: 2rem 0; }
 
     /* 푸터 카드 */
     footer {
@@ -86,17 +203,40 @@
     .footer-card {
       max-width: 960px;
       margin: 0 auto;
-      background: #fff;
+      background: var(--surface);
       border-radius: 12px;
       padding: 1.25rem;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+      box-shadow: 0 2px 8px var(--shadow);
       text-align: center;
-      color: #666;
+      color: var(--muted);
     }
+    .footer-card a { color: var(--accent); font-weight: bold; text-decoration: none; }
+    .footer-card a:hover { text-decoration: underline; }
+
+    /* 맨 위로 가기 */
+    #to-top {
+      position: fixed;
+      right: 1rem;
+      bottom: 1rem;
+      width: 3rem;
+      height: 3rem;
+      border: none;
+      border-radius: 50%;
+      background: var(--accent);
+      color: #fff;
+      font-size: 1.25rem;
+      cursor: pointer;
+      box-shadow: 0 2px 8px var(--shadow);
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s;
+    }
+    #to-top.show { opacity: 1; pointer-events: auto; }
   </style>
 </head>
 <body>
   <header>
+    <button id="theme-btn" type="button" aria-label="다크 모드 전환">🌙 다크</button>
     <img class="logo" src="logo.png" alt="제주대학교 로고" onerror="this.style.display='none'">
     <h1>🍊 내 취향 카드</h1>
     <p>나의 취향을 카드로 모아 보세요</p>
@@ -112,6 +252,22 @@
   </nav>
 
   <main>
+    <div class="toolbar">
+      <div class="search-wrap">
+        <input id="search" type="search" placeholder="🔍 카드 검색 (예: 한라산, 도전, 친구)" aria-label="카드 검색">
+      </div>
+      <div class="like-box">
+        <span>👍 좋아요</span>
+        <span id="count">0</span>
+        <button id="btn" type="button">증가</button>
+      </div>
+      <div class="toolbar-row">
+        <button id="expand-all" type="button">모두 펼치기</button>
+        <button id="collapse-all" type="button">모두 접기</button>
+        <span id="result-info"></span>
+      </div>
+    </div>
+
     <div class="cards">
       <section class="card" id="intro">
         <h2>🎓 제주대학교를 소개합니다</h2>
@@ -252,14 +408,117 @@
         <p>💙 제주대학교는 언제나 여러분 곁에 있습니다.</p>
         <p>🌟 지금, 제주대학교에서 꿈을 시작하세요!</p>
       </section>
+      <p id="empty">검색 결과가 없습니다 😢</p>
     </div>
   </main>
 
   <footer id="contact">
     <div class="footer-card">
       <p>© 2026 김민기 · 내 취향 카드</p>
+      <p>🔗 <a href="https://www.jejunu.ac.kr" target="_blank" rel="noopener noreferrer">제주대학교 공식 홈페이지</a></p>
     </div>
   </footer>
 
+
+  <button id="to-top" type="button" aria-label="맨 위로">⬆</button>
+
+  <script>
+    const store = {
+      get(k) { try { return localStorage.getItem(k); } catch (e) { return null; } },
+      set(k, v) { try { localStorage.setItem(k, v); } catch (e) {} }
+    };
+
+    // 다크 모드
+    const root = document.documentElement;
+    const themeBtn = document.getElementById('theme-btn');
+    function applyTheme(t) {
+      if (t === 'dark') root.setAttribute('data-theme', 'dark');
+      else root.removeAttribute('data-theme');
+      themeBtn.textContent = t === 'dark' ? '☀️ 라이트' : '🌙 다크';
+    }
+    applyTheme(store.get('theme') === 'dark' ? 'dark' : 'light');
+    themeBtn.addEventListener('click', () => {
+      const next = root.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+      applyTheme(next);
+      store.set('theme', next);
+    });
+
+    // 좋아요 카운터 (2씩 증가, 새로고침해도 유지)
+    const countEl = document.getElementById('count');
+    let count = parseInt(store.get('likes'), 10) || 0;
+    countEl.textContent = count;
+    document.getElementById('btn').addEventListener('click', () => {
+      count += 2;
+      countEl.textContent = count;
+      store.set('likes', count);
+    });
+
+    // 카드 접기/펼치기
+    const cards = Array.from(document.querySelectorAll('.card'));
+    cards.forEach(card => {
+      card.classList.add('collapsed');
+      const h2 = card.querySelector('h2');
+      h2.setAttribute('role', 'button');
+      h2.setAttribute('tabindex', '0');
+      const toggle = () => card.classList.toggle('collapsed');
+      h2.addEventListener('click', toggle);
+      h2.addEventListener('keydown', e => {
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); toggle(); }
+      });
+    });
+    document.getElementById('expand-all').addEventListener('click', () => {
+      cards.forEach(c => c.classList.remove('collapsed'));
+    });
+    document.getElementById('collapse-all').addEventListener('click', () => {
+      cards.forEach(c => c.classList.add('collapsed'));
+    });
+
+    // 메뉴로 이동하면 해당 카드를 펼침
+    function openFromHash() {
+      const target = document.querySelector('.card' + (location.hash || '#none'));
+      if (target) target.classList.remove('collapsed');
+    }
+    window.addEventListener('hashchange', openFromHash);
+    openFromHash();
+
+    // 검색 (일치한 글자는 형광펜 표시)
+    const searchEl = document.getElementById('search');
+    const emptyEl = document.getElementById('empty');
+    const infoEl = document.getElementById('result-info');
+    const lines = Array.from(document.querySelectorAll('.card p'));
+    const originalText = new Map(lines.map(p => [p, p.textContent]));
+    const escapeHtml = t => t.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    searchEl.addEventListener('input', () => {
+      const q = searchEl.value.trim().toLowerCase();
+      let shown = 0;
+      cards.forEach(card => {
+        const match = !q || card.textContent.toLowerCase().includes(q);
+        card.classList.toggle('hidden', !match);
+        if (match) shown++;
+        if (match && q) card.classList.remove('collapsed');
+        card.querySelectorAll('p').forEach(p => {
+          const text = originalText.get(p);
+          if (!q) { p.textContent = text; return; }
+          let out = '';
+          let i = 0;
+          const lower = text.toLowerCase();
+          for (let at = lower.indexOf(q); at !== -1; at = lower.indexOf(q, i)) {
+            out += escapeHtml(text.slice(i, at)) + '<mark>' + escapeHtml(text.slice(at, at + q.length)) + '</mark>';
+            i = at + q.length;
+          }
+          p.innerHTML = out + escapeHtml(text.slice(i));
+        });
+      });
+      emptyEl.style.display = shown ? 'none' : 'block';
+      infoEl.textContent = q ? shown + '개 카드 일치' : '';
+    });
+
+    // 맨 위로 가기
+    const topBtn = document.getElementById('to-top');
+    window.addEventListener('scroll', () => {
+      topBtn.classList.toggle('show', window.scrollY > 300);
+    });
+    topBtn.addEventListener('click', () => window.scrollTo({ top: 0, behavior: 'smooth' }));
+  </script>
 </body>
 </html>
