@@ -44,16 +44,15 @@
     /* ===== 전체 레이아웃: header / nav / (section, article | aside) / footer ===== */
     .page {
       display: grid;
-      grid-template-columns: minmax(0, 2fr) minmax(0, 1fr);
+      grid-template-columns: 190px minmax(0, 1fr) 300px;
       grid-template-areas:
-        "header  header"
-        "nav     nav"
-        "section aside"
-        "article aside"
-        "gallery aside"
-        "footer  footer";
+        "header  header  header"
+        "nav     gallery aside"
+        "nav     section aside"
+        "nav     article aside"
+        "footer  footer  footer";
       gap: 1rem;
-      max-width: 1100px;
+      max-width: 1280px;
       margin: 0 auto;
       padding: 1rem;
     }
@@ -64,6 +63,7 @@
     #photos { grid-area: gallery; }
     aside   { grid-area: aside; }
     footer  { grid-area: footer; }
+    [id] { scroll-margin-top: 1rem; }
 
     .box {
       background: var(--surface);
@@ -98,10 +98,11 @@
       cursor: pointer;
     }
 
-    /* ===== nav ===== */
+    /* ===== nav: 왼쪽에 고정되어 스크롤을 따라옴 ===== */
     nav {
       position: sticky;
-      top: 0;
+      top: 1rem;
+      align-self: start;
       z-index: 20;
       background: var(--surface);
       border-radius: 12px;
@@ -110,21 +111,21 @@
     nav ul {
       list-style: none;
       margin: 0;
-      padding: 0;
+      padding: 0.5rem;
       display: flex;
-      justify-content: center;
-      flex-wrap: wrap;
-      gap: 0.25rem;
+      flex-direction: column;
+      gap: 0.15rem;
     }
     nav a {
       display: block;
-      padding: 0.85rem 1.1rem;
+      padding: 0.7rem 0.9rem;
       color: var(--text);
       text-decoration: none;
-      border-bottom: 3px solid transparent;
+      border-left: 4px solid transparent;
+      border-radius: 8px;
     }
-    nav a:hover { color: var(--accent); }
-    nav a.active { color: var(--accent); border-bottom-color: var(--accent); font-weight: bold; }
+    nav a:hover { color: var(--accent); background: var(--soft); }
+    nav a.active { color: var(--accent); border-left-color: var(--accent); font-weight: bold; background: var(--soft); }
 
     /* ===== section: 대표 메뉴 ===== */
     .food-grid {
@@ -181,7 +182,7 @@
     .timeline .time { color: var(--accent-2); font-size: 0.85rem; font-weight: bold; }
     .timeline p { margin: 0.2rem 0 0; color: var(--muted); }
 
-    /* ===== 사진 갤러리: 10개씩 슬라이드 ===== */
+    /* ===== 사진 슬라이드쇼: 2초마다 한 장씩 ===== */
     .photo-form { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 0.75rem; }
     .photo-form input {
       flex: 1 1 200px;
@@ -204,33 +205,52 @@
     .photo-pager button:disabled { background: var(--border); color: var(--muted); cursor: not-allowed; }
     #photo-status { min-height: 1.5rem; margin: 0 0 0.5rem; color: var(--muted); text-align: center; }
     #photo-status.error { color: #c0392b; }
-    .photo-viewport { overflow: hidden; }
-    .photo-slide { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 0.5rem; }
-    .photo-slide.in-next { animation: photoFromRight 0.35s ease; }
-    .photo-slide.in-prev { animation: photoFromLeft 0.35s ease; }
-    @keyframes photoFromRight { from { transform: translateX(60px); opacity: 0; } to { transform: none; opacity: 1; } }
-    @keyframes photoFromLeft  { from { transform: translateX(-60px); opacity: 0; } to { transform: none; opacity: 1; } }
-    .photo {
+    .stage {
       position: relative;
-      display: block;
-      aspect-ratio: 1 / 1;
-      border-radius: 10px;
       overflow: hidden;
+      aspect-ratio: 16 / 9;
+      border-radius: 12px;
       background: var(--border);
     }
-    .photo img { width: 100%; height: 100%; object-fit: cover; display: block; transition: transform 0.3s; }
-    .photo:hover img { transform: scale(1.06); }
-    .photo span {
+    .slides { position: absolute; inset: 0; }
+    .slide { position: absolute; inset: 0; display: block; transition: transform 0.3s ease; }
+    .slide img { width: 100%; height: 100%; object-fit: cover; display: block; }
+    .slide.active { transform: none; }
+    .slide.next { transform: translateX(100%); }
+    .slide.prev { transform: translateX(-100%); }
+    .slide.far { transform: translateX(100%); transition: none; visibility: hidden; }
+    .slide .caption {
       position: absolute;
       left: 0; right: 0; bottom: 0;
-      padding: 0.2rem 0.4rem;
-      font-size: 0.72rem;
+      padding: 1.4rem 0.9rem 0.6rem;
       color: #fff;
-      background: rgba(0, 0, 0, 0.55);
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
+      font-size: 0.9rem;
+      background: linear-gradient(transparent, rgba(0, 0, 0, 0.7));
     }
+    .counter, #photo-toggle {
+      position: absolute;
+      top: 0.6rem;
+      z-index: 2;
+      border: none;
+      border-radius: 999px;
+      background: rgba(0, 0, 0, 0.55);
+      color: #fff;
+      font-size: 0.8rem;
+      padding: 0.25rem 0.75rem;
+    }
+    .counter { right: 0.6rem; }
+    #photo-toggle { left: 0.6rem; cursor: pointer; }
+    .dots { display: flex; justify-content: center; flex-wrap: wrap; gap: 0.4rem; margin: 0.7rem 0 0; }
+    .dots button {
+      width: 0.7rem;
+      height: 0.7rem;
+      padding: 0;
+      border: none;
+      border-radius: 50%;
+      background: var(--border);
+      cursor: pointer;
+    }
+    .dots button[aria-current="true"] { background: var(--accent); }
     .photo-pager { display: flex; justify-content: center; align-items: center; gap: 1rem; margin-top: 0.9rem; }
     #photo-page { min-width: 5rem; text-align: center; }
     .photo-credit { margin: 0.6rem 0 0; text-align: center; font-size: 0.8rem; color: var(--muted); }
@@ -297,26 +317,29 @@
     }
     #to-top.show { opacity: 1; pointer-events: auto; }
 
-    /* ===== 모바일: 한 줄로 쌓기 ===== */
-    @media (max-width: 760px) {
-      .photo-slide { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    /* ===== 좁은 화면: 한 줄로 쌓고 메뉴는 위쪽 가로로 ===== */
+    @media (max-width: 960px) {
+      [id] { scroll-margin-top: 4.5rem; }
       .page {
         grid-template-columns: minmax(0, 1fr);
         grid-template-areas:
           "header"
           "nav"
+          "gallery"
           "section"
           "article"
-          "gallery"
           "aside"
           "footer";
       }
+      nav { top: 0; }
+      nav ul { flex-direction: row; flex-wrap: wrap; justify-content: center; padding: 0.25rem; }
+      nav a { border-left: none; border-bottom: 3px solid transparent; border-radius: 0; padding: 0.7rem 0.9rem; }
+      nav a.active { border-left-color: transparent; border-bottom-color: var(--accent); }
       header h1 { font-size: 1.6rem; }
     }
     @media (prefers-reduced-motion: reduce) {
       html { scroll-behavior: auto; }
-      .food, .photo img { transition: none; }
-      .photo-slide.in-next, .photo-slide.in-prev { animation: none; }
+      .food, .slide { transition: none; }
     }
   </style>
 </head>
@@ -331,14 +354,36 @@
 
     <nav aria-label="주요 메뉴">
       <ul>
-        <li><a href="#menu">대표 메뉴</a></li>
-        <li><a href="#course">하루 코스</a></li>
-        <li><a href="#photos">사진</a></li>
-        <li><a href="#weather">날씨별 추천</a></li>
-        <li><a href="#region">지역별</a></li>
-        <li><a href="#contact">안내</a></li>
+        <li><a href="#photos">📸 사진 검색</a></li>
+        <li><a href="#menu">🍽️ 대표 메뉴</a></li>
+        <li><a href="#course">🗓️ 하루 코스</a></li>
+        <li><a href="#weather">🌦️ 날씨별 추천</a></li>
+        <li><a href="#region">📍 지역별</a></li>
+        <li><a href="#contact">ℹ️ 안내</a></li>
       </ul>
     </nav>
+
+    <section id="photos" class="box">
+      <h2>📸 제주 사진 검색</h2>
+      <p class="lead">궁금한 음식이나 장소를 입력하고 검색하면, 사진이 2초마다 한 장씩 넘어갑니다.</p>
+      <form id="photo-form" class="photo-form">
+        <input id="photo-query" type="search" value="제주도" placeholder="검색어 (예: 흑돼지, 성산일출봉)" aria-label="사진 검색어" required>
+        <button type="submit">검색</button>
+      </form>
+      <p id="photo-status" role="status" aria-live="polite"></p>
+      <div class="stage">
+        <div id="photo-slides" class="slides"></div>
+        <button id="photo-toggle" type="button" aria-label="슬라이드 일시정지">⏸ 일시정지</button>
+        <span id="photo-counter" class="counter"></span>
+      </div>
+      <div id="photo-dots" class="dots"></div>
+      <div class="photo-pager">
+        <button id="photo-prev" type="button" disabled>◀ 이전 10개</button>
+        <span id="photo-page"></span>
+        <button id="photo-next" type="button" disabled>다음 10개 ▶</button>
+      </div>
+      <p class="photo-credit">이미지 제공: <a href="https://pixabay.com" target="_blank" rel="noopener noreferrer">Pixabay</a></p>
+    </section>
 
     <section id="menu" class="box">
       <h2>🍽️ 제주 대표 메뉴</h2>
@@ -420,22 +465,6 @@
       </ol>
     </article>
 
-    <section id="photos" class="box">
-      <h2>📸 제주 사진 검색</h2>
-      <p class="lead">궁금한 음식이나 장소를 입력하면 사진을 10장씩 보여줍니다.</p>
-      <form id="photo-form" class="photo-form">
-        <input id="photo-query" type="search" value="제주도" placeholder="검색어 (예: 흑돼지, 성산일출봉)" aria-label="사진 검색어" required>
-        <button type="submit">검색</button>
-      </form>
-      <p id="photo-status" role="status" aria-live="polite"></p>
-      <div class="photo-viewport"><div id="photo-slide" class="photo-slide"></div></div>
-      <div class="photo-pager">
-        <button id="photo-prev" type="button" disabled>◀ 이전 10개</button>
-        <span id="photo-page"></span>
-        <button id="photo-next" type="button" disabled>다음 10개 ▶</button>
-      </div>
-      <p class="photo-credit">이미지 제공: <a href="https://pixabay.com" target="_blank" rel="noopener noreferrer">Pixabay</a></p>
-    </section>
 
     <aside>
       <div class="box" id="weather">
@@ -571,12 +600,16 @@
     }
     loadNowWeather();
 
-    // 사진 검색 (키는 서버의 /api/pixabay 가 환경변수로 관리하므로 화면에는 없음)
+    // 사진 검색 + 슬라이드쇼 (키는 서버의 /api/pixabay 가 환경변수로 관리하므로 화면에는 없음)
     const PHOTO_PER_PAGE = 10;
+    const SLIDE_MS = 2000; // 2초마다 한 장씩 넘김
     const photoForm = document.getElementById('photo-form');
     const photoQuery = document.getElementById('photo-query');
     const photoStatus = document.getElementById('photo-status');
-    const photoSlide = document.getElementById('photo-slide');
+    const slidesBox = document.getElementById('photo-slides');
+    const dotsBox = document.getElementById('photo-dots');
+    const counterEl = document.getElementById('photo-counter');
+    const toggleBtn = document.getElementById('photo-toggle');
     const photoPrev = document.getElementById('photo-prev');
     const photoNext = document.getElementById('photo-next');
     const photoPageEl = document.getElementById('photo-page');
@@ -584,6 +617,11 @@
     let photoPage = 1;
     let photoTotal = 1;
     let photoLoading = false;
+    let slideEls = [];
+    let dotEls = [];
+    let slideIdx = 0;
+    let slideTimer = null;
+    let slidePlaying = true;
 
     function setPhotoStatus(msg, isError) {
       photoStatus.textContent = msg;
@@ -594,28 +632,80 @@
       photoNext.disabled = photoLoading || photoPage >= photoTotal;
       photoPageEl.textContent = photoTerm ? photoPage + ' / ' + photoTotal : '';
     }
-    function renderPhotos(hits, direction) {
-      photoSlide.replaceChildren();
-      hits.forEach(h => {
+
+    // 현재 장은 active, 다음은 오른쪽 대기(next), 이전은 왼쪽(prev), 나머지는 숨김(far)
+    function layoutSlides() {
+      const n = slideEls.length;
+      slideEls.forEach((el, i) => {
+        const rel = (i - slideIdx + n) % n;
+        el.className = 'slide ' + (rel === 0 ? 'active' : rel === 1 ? 'next' : rel === n - 1 ? 'prev' : 'far');
+      });
+      dotEls.forEach((d, i) => d.setAttribute('aria-current', String(i === slideIdx)));
+      counterEl.textContent = n ? (slideIdx + 1) + ' / ' + n : '';
+    }
+    function stopSlides() {
+      clearInterval(slideTimer);
+      slideTimer = null;
+    }
+    function startSlides() {
+      stopSlides();
+      if (!slidePlaying || slideEls.length < 2) return;
+      slideTimer = setInterval(() => {
+        slideIdx = (slideIdx + 1) % slideEls.length;
+        layoutSlides();
+      }, SLIDE_MS);
+    }
+    function renderPhotos(hits) {
+      stopSlides();
+      slidesBox.replaceChildren();
+      dotsBox.replaceChildren();
+      slideEls = hits.map(h => {
         const a = document.createElement('a');
-        a.className = 'photo';
         a.href = h.pageURL;
         a.target = '_blank';
         a.rel = 'noopener noreferrer';
         const img = document.createElement('img');
         img.src = h.webformatURL;
         img.alt = h.tags || '';
-        img.loading = 'lazy';
-        const label = document.createElement('span');
-        label.textContent = h.tags || '';
-        a.append(img, label);
-        photoSlide.appendChild(a);
+        const cap = document.createElement('span');
+        cap.className = 'caption';
+        cap.textContent = (h.tags || '') + (h.user ? ' · 📷 ' + h.user : '');
+        a.append(img, cap);
+        slidesBox.appendChild(a);
+        return a;
       });
-      photoSlide.classList.remove('in-next', 'in-prev');
-      void photoSlide.offsetWidth;
-      photoSlide.classList.add(direction === 'prev' ? 'in-prev' : 'in-next');
+      dotEls = hits.map((h, i) => {
+        const b = document.createElement('button');
+        b.type = 'button';
+        b.setAttribute('aria-label', (i + 1) + '번째 사진 보기');
+        b.addEventListener('click', () => {
+          slideIdx = i;
+          layoutSlides();
+          startSlides();
+        });
+        dotsBox.appendChild(b);
+        return b;
+      });
+      slideIdx = 0;
+      layoutSlides();
+      startSlides();
     }
-    async function loadPhotos(page, direction) {
+    function clearPhotos() {
+      stopSlides();
+      slidesBox.replaceChildren();
+      dotsBox.replaceChildren();
+      slideEls = [];
+      dotEls = [];
+      counterEl.textContent = '';
+    }
+    toggleBtn.addEventListener('click', () => {
+      slidePlaying = !slidePlaying;
+      toggleBtn.textContent = slidePlaying ? '⏸ 일시정지' : '▶ 재생';
+      toggleBtn.setAttribute('aria-label', slidePlaying ? '슬라이드 일시정지' : '슬라이드 재생');
+      if (slidePlaying) startSlides(); else stopSlides();
+    });
+
+    async function loadPhotos(page) {
       photoLoading = true;
       updatePhotoPager();
       setPhotoStatus('사진을 불러오는 중...');
@@ -625,18 +715,19 @@
         try { data = await res.json(); } catch (e) {}
         if (!res.ok) throw new Error(data.error || '사진을 불러오지 못했습니다. (오류 ' + res.status + ')');
         if (!data.hits || data.hits.length === 0) {
-          photoSlide.replaceChildren();
+          clearPhotos();
           photoPage = 1;
           photoTotal = 1;
           setPhotoStatus('"' + photoTerm + '" 검색 결과가 없습니다.', true);
         } else {
           photoPage = page;
           photoTotal = Math.max(1, Math.ceil(data.totalHits / PHOTO_PER_PAGE));
-          renderPhotos(data.hits, direction);
+          renderPhotos(data.hits);
           setPhotoStatus('"' + photoTerm + '" 검색 결과 ' + data.totalHits + '장 중 ' +
             ((page - 1) * PHOTO_PER_PAGE + 1) + '–' + ((page - 1) * PHOTO_PER_PAGE + data.hits.length) + '번째');
         }
       } catch (err) {
+        clearPhotos();
         setPhotoStatus(err.message || '네트워크 오류가 발생했습니다.', true);
       } finally {
         photoLoading = false;
@@ -650,20 +741,23 @@
       photoTerm = q;
       photoPage = 1;
       photoTotal = 1;
-      loadPhotos(1, 'next');
+      loadPhotos(1);
     });
-    photoPrev.addEventListener('click', () => loadPhotos(photoPage - 1, 'prev'));
-    photoNext.addEventListener('click', () => loadPhotos(photoPage + 1, 'next'));
+    photoPrev.addEventListener('click', () => loadPhotos(photoPage - 1));
+    photoNext.addEventListener('click', () => loadPhotos(photoPage + 1));
     photoTerm = photoQuery.value.trim();
-    if (photoTerm) loadPhotos(1, 'next');
+    if (photoTerm) loadPhotos(1);
 
     // 메뉴: 현재 위치 표시
     const links = Array.from(document.querySelectorAll('nav a'));
     const targets = links.map(a => document.querySelector(a.getAttribute('href')));
     function markActive() {
       let current = null;
+      let bestTop = -Infinity;
       targets.forEach((t, i) => {
-        if (t && t.getBoundingClientRect().top < window.innerHeight * 0.35) current = links[i];
+        if (!t) return;
+        const top = t.getBoundingClientRect().top;
+        if (top < window.innerHeight * 0.35 && top > bestTop) { bestTop = top; current = links[i]; }
       });
       links.forEach(a => a.classList.toggle('active', a === current));
     }
