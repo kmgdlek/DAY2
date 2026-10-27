@@ -101,7 +101,8 @@
     /* ===== nav: 왼쪽에 고정되어 스크롤을 따라옴 ===== */
     nav {
       position: sticky;
-      top: 1rem;
+      top: 50%;                      /* 화면 세로 중간에 고정 */
+      transform: translateY(-50%);
       align-self: start;
       z-index: 20;
       background: var(--surface);
@@ -401,7 +402,7 @@
           "aside"
           "footer";
       }
-      nav { top: 0; }
+      nav { top: 0; transform: none; }
       nav ul { flex-direction: row; flex-wrap: wrap; justify-content: center; padding: 0.25rem; }
       nav a { border-left: none; border-bottom: 3px solid transparent; border-radius: 0; padding: 0.7rem 0.9rem; }
       nav a.active { border-left-color: transparent; border-bottom-color: var(--accent); }
