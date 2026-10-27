@@ -100,10 +100,9 @@
 
     /* ===== nav: 왼쪽에 고정되어 스크롤을 따라옴 ===== */
     nav {
-      position: sticky;
-      top: 50%;                      /* 화면 세로 중간에 고정 */
-      transform: translateY(-50%);
+      position: relative;            /* 위치는 아래 스크립트가 천천히 따라가며 옮김 */
       align-self: start;
+      will-change: transform;
       z-index: 20;
       background: var(--surface);
       border-radius: 12px;
@@ -388,25 +387,75 @@
       cursor: pointer;
     }
 
-    /* ===== 좁은 화면: 한 줄로 쌓고 메뉴는 위쪽 가로로 ===== */
+    /* ===== 반응형 =====
+       1100px 이하(작은 노트북/큰 태블릿): 좌우 칸을 조금 좁게
+       960px 이하(태블릿 세로/모바일): 한 줄로 쌓고, 메뉴는 화면 위쪽 가로 막대로
+       600px 이하(모바일): 여백·글자·버튼 크기를 줄이고 채팅은 전체 화면 */
+    @media (max-width: 1100px) {
+      .page { grid-template-columns: 160px minmax(0, 1fr) 260px; }
+      nav a { padding: 0.65rem 0.7rem; font-size: 0.95rem; }
+    }
     @media (max-width: 960px) {
-      [id] { scroll-margin-top: 4.5rem; }
+      [id] { scroll-margin-top: 4.2rem; }
       .page {
         grid-template-columns: minmax(0, 1fr);
         grid-template-areas:
           "header"
-          "nav"
           "gallery"
           "section"
           "article"
           "aside"
           "footer";
+        padding-top: 3.6rem;      /* 위에 고정된 메뉴 막대 자리 */
       }
-      nav { top: 0; transform: none; }
-      nav ul { flex-direction: row; flex-wrap: wrap; justify-content: center; padding: 0.25rem; }
-      nav a { border-left: none; border-bottom: 3px solid transparent; border-radius: 0; padding: 0.7rem 0.9rem; }
+      /* 메뉴: 화면 맨 위에 고정, 칸이 넘치면 옆으로 밀어서 볼 수 있음 */
+      nav {
+        position: fixed;
+        top: 0; left: 0; right: 0;
+        grid-area: auto;
+        transform: none !important;
+        will-change: auto;
+        border-radius: 0;
+      }
+      nav ul {
+        flex-direction: row;
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        gap: 0;
+        padding: 0 0.25rem;
+        scrollbar-width: none;
+        -webkit-overflow-scrolling: touch;
+      }
+      nav ul::-webkit-scrollbar { display: none; }
+      nav li { flex: 0 0 auto; }
+      nav a {
+        white-space: nowrap;
+        border-left: none;
+        border-bottom: 3px solid transparent;
+        border-radius: 0;
+        padding: 0.8rem 0.85rem;
+      }
       nav a.active { border-left-color: transparent; border-bottom-color: var(--accent); }
       header h1 { font-size: 1.6rem; }
+      #chat-open { bottom: 4.6rem; }
+    }
+    @media (max-width: 600px) {
+      .page { padding: 3.4rem 0.6rem 0.8rem; gap: 0.75rem; }
+      .box { padding: 1rem; }
+      .box h2 { font-size: 1.2rem; }
+      header { padding: 2.6rem 0.75rem 1.2rem; }
+      header h1 { font-size: 1.4rem; }
+      header p { font-size: 0.9rem; }
+      #theme-btn { top: 0.6rem; right: 0.6rem; font-size: 0.85rem; padding: 0.3rem 0.65rem; }
+      .stage { aspect-ratio: 4 / 3; }
+      .photo-form input { flex: 1 1 100%; }
+      .photo-form button { flex: 1 1 100%; }
+      .photo-pager button { white-space: nowrap; padding: 0.6rem 0.6rem; font-size: 0.88rem; }
+      #chat-open { right: 0.75rem; bottom: 4.3rem; padding: 0.65rem 0.95rem; font-size: 0.92rem; }
+      #to-top { right: 0.75rem; bottom: 0.75rem; width: 2.8rem; height: 2.8rem; }
+      /* 채팅은 전체 화면으로 */
+      #chat-modal { padding: 0; }
+      .chat-box { width: 100%; height: 100%; border-radius: 0; }
     }
     @media (prefers-reduced-motion: reduce) {
       html { scroll-behavior: auto; }
@@ -830,6 +879,7 @@
     // 메뉴: 현재 위치 표시
     const links = Array.from(document.querySelectorAll('nav a'));
     const targets = links.map(a => document.querySelector(a.getAttribute('href')));
+    let lastActive = null;
     function markActive() {
       let current = null;
       let bestTop = -Infinity;
@@ -839,9 +889,49 @@
         if (top < window.innerHeight * 0.35 && top > bestTop) { bestTop = top; current = links[i]; }
       });
       links.forEach(a => a.classList.toggle('active', a === current));
+      // 좁은 화면(가로 메뉴): 현재 항목이 막대 안에 보이도록 옆으로 밀기
+      if (current && current !== lastActive && window.innerWidth <= 960) {
+        const bar = current.closest('ul');
+        bar.scrollTo({ left: current.offsetLeft - (bar.clientWidth - current.offsetWidth) / 2, behavior: 'smooth' });
+      }
+      lastActive = current;
     }
 
     // 맨 위로 가기
+    // 왼쪽 메뉴: 스크롤하면 화면 세로 중간으로 천천히(부드럽게) 따라옴
+    (function () {
+      const nav = document.querySelector('nav');
+      const footer = document.querySelector('footer');
+      const wide = window.matchMedia('(min-width: 961px)');
+      const reduce = window.matchMedia('(prefers-reduced-motion: reduce)');
+      const TAU = 260;            // ms. 클수록 더 천천히 따라옴 (프레임 속도와 무관)
+      let cur = 0, raf = 0, last = 0;
+
+      function target() {
+        const navH = nav.offsetHeight;
+        const naturalTop = nav.getBoundingClientRect().top + window.scrollY - cur;
+        const footerTop = footer.getBoundingClientRect().top + window.scrollY;
+        const max = Math.max(0, footerTop - 16 - navH - naturalTop);
+        const want = window.scrollY + window.innerHeight / 2 - navH / 2 - naturalTop;
+        return Math.min(Math.max(want, 0), max);
+      }
+      function frame(now) {
+        raf = 0;
+        const dt = last ? Math.min(now - last, 100) : 16;
+        last = now;
+        if (!wide.matches) { cur = 0; nav.style.transform = ''; return; }
+        const t = target();
+        cur = reduce.matches ? t : cur + (t - cur) * (1 - Math.exp(-dt / TAU));
+        if (Math.abs(t - cur) < 0.3) cur = t;
+        nav.style.transform = 'translateY(' + cur.toFixed(1) + 'px)';
+        if (cur !== t) raf = requestAnimationFrame(frame); else last = 0;
+      }
+      function kick() { if (!raf) raf = requestAnimationFrame(frame); }
+      window.addEventListener('scroll', kick, { passive: true });
+      window.addEventListener('resize', kick);
+      kick();
+    })();
+
     // 에이전트 채팅: 버튼을 누르면 agent.html 을 팝업 안에 불러옵니다
     const chatModal = document.getElementById('chat-modal');
     const chatFrame = document.getElementById('chat-frame');
