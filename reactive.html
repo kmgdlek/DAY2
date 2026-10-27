@@ -51,6 +51,8 @@
       border-bottom: 1px solid var(--line);
       box-shadow: 0 2px 8px var(--shadow);
     }
+    /* index.html 의 팝업 안에서 열릴 때: 오른쪽 위 구석의 ✕ 버튼 자리를 비워 둠 */
+    .embedded .topbar { padding-right: 3.6rem; }
     .logo { font-weight: 800; font-size: 1.15rem; margin-right: auto; color: var(--text); text-decoration: none; }
     .menu { list-style: none; margin: 0; padding: 0; display: flex; gap: 0.25rem; }
     .menu a {
@@ -240,6 +242,8 @@
   </main>
 
   <script>
+    if (window.top !== window.self) document.documentElement.classList.add('embedded');
+
     const burger = document.getElementById('burger');
     const menu = document.getElementById('menu');
     const backdrop = document.getElementById('backdrop');
