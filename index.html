@@ -904,7 +904,7 @@
       const footer = document.querySelector('footer');
       const wide = window.matchMedia('(min-width: 961px)');
       const reduce = window.matchMedia('(prefers-reduced-motion: reduce)');
-      const TAU = 260;            // ms. 클수록 더 천천히 따라옴 (프레임 속도와 무관)
+      const TAU = 170;            // ms. 클수록 더 천천히 따라옴 (프레임 속도와 무관)
       let cur = 0, raf = 0, last = 0;
 
       function target() {
