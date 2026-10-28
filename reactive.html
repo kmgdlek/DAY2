@@ -112,7 +112,9 @@
     .card .emoji { font-size: 2rem; }
     .card h2 { margin: 0.3rem 0 0.2rem; font-size: 1.05rem; }
     .card p { margin: 0; color: var(--muted); font-size: 0.92rem; }
-    .jeju-map { display: block; width: 100%; height: 78vh; min-height: 520px; border: 1px solid var(--line); border-radius: 14px; background: var(--surface); }
+    /* 지도 탭: 제목·안내 글을 없애고 위쪽 바 아래 남은 화면을 지도가 꽉 채워 스크롤이 생기지 않게 함 */
+    main:has(#map.show) { padding-top: 0.75rem; padding-bottom: 0.75rem; }
+    .jeju-map { display: block; width: 100%; height: calc(100vh - var(--bar-h) - 1.5rem); height: calc(100dvh - var(--bar-h) - 1.5rem); min-height: 420px; border: 1px solid var(--line); border-radius: 14px; background: var(--surface); }
     .note { margin-top: 1rem; font-size: 0.8rem; color: var(--muted); }
 
     /* ===== 모바일: 메뉴를 햄버거 아이콘으로 ===== */
@@ -220,10 +222,7 @@
     </section>
 
     <section id="map" class="panel">
-      <h1>🗺️ 지도</h1>
-      <p class="lead">날씨에 맞춰 제주 여행지를 추천받고 지도에서 확인해 보세요</p>
       <iframe id="jeju-map" class="jeju-map" title="제주 여행 추천 지도" allow="clipboard-write"></iframe>
-      <p class="note">※ 추천 장소의 위치는 대략적이며, 정확한 정보는 네이버 지도에서 확인하세요.</p>
     </section>
   </main>
 
